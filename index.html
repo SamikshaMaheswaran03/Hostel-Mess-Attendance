@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hostel Attendance System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+        <center>
+    <img src="C:\Users\sindh\Downloads\final8.png" height="200" width="300">
+        </center>
+</div>
+
+    <center><h1>Hostel Mess Attendance</h1>
+    <form id="attendanceForm">
+      <label for="studentId">Student ID:</label>
+      <input type="text" id="studentId" required placeholder="Enter your ID" />
+
+      <label for="meal">Select Meal:</label>
+      <select id="meal" required>
+        <option value="">--Select--</option>
+        <option value="breakfast">Breakfast</option>
+        <option value="lunch">Lunch</option>
+        <option value="dinner">Dinner</option>
+      </select>
+
+      <button type="submit">Mark Attendance</button>
+    </form>
+
+    <div id="message"></div>
+     <center> <h2>Meal Attendance Summary</h2>
+<div class="summary">
+  <p>🍳 Breakfast: <span id="breakfastCount">0</span></p>
+  <p>🍛 Lunch: <span id="lunchCount">0</span></p>
+  <p>🍽️ Dinner: <span id="dinnerCount">0</span></p>
+</div>
+
+  </div>
+      </body>
+</html>
