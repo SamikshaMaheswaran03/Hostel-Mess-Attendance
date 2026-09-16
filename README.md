@@ -30,14 +30,16 @@ A full-stack web app for tracking student meal attendance and food preferences. 
 
 **Backend (Flask)**
 - **Python + Flask** — JSON API and admin sessions
-- **Firebase Firestore** — cloud database (`firebase-admin`)
+- **In-memory data store** — `mock_store` keeps records in process memory
 - **fpdf2** — PDF export
 
 ---
 
-## 🗄️ Data Model (Firestore)
+## 🗄️ Data Model (In-memory store)
 
-Collection `attendance`:
+`mock_store` keeps attendance and menus in process memory (lost on restart). Seeded with sample data for demo purposes.
+
+Records in the `attendance` store:
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -48,11 +50,11 @@ Collection `attendance`:
 | `status` | string | `present` (default) or `absent` |
 | `foods` | array | selected food item names; empty for absent or no preference |
 
-Document ID is `{student_id}_{meal}_{date}`, which makes duplicate marking idempotent.
+The record key is `{student_id}_{meal}_{date}`, which makes duplicate marking idempotent.
 
-Collection `menus`: document ID is the date (`YYYY-MM-DD`). Fields are `breakfast`, `lunch`, `dinner`, each an array of food item names. Missing date/document falls back to the `DEFAULT_MENU` in the backend.
+The `menus` store: key is the date (`YYYY-MM-DD`). Fields are `breakfast`, `lunch`, `dinner`, each an array of food item names. Missing date falls back to the `DEFAULT_MENU` in the backend.
 
-Collection `students` (optional, when `STUDENT_REGISTRY=1`): document ID is the student ID. Only registered IDs can mark attendance.
+The `students` registry (optional, when `STUDENT_REGISTRY=1`): entry key is the student ID. Only registered IDs can mark attendance.
 
 ---
 
@@ -64,7 +66,7 @@ Collection `students` (optional, when `STUDENT_REGISTRY=1`): document ID is the 
 pip install -r requirements.txt
 ```
 
-Create a Firebase project at https://console.firebase.google.com, enable **Firestore**, and in **Project settings → Service accounts** generate a private key. Save it as `service-account.json` in the project root, then:
+Copy the environment template:
 
 ```bash
 copy .env.example .env
@@ -73,8 +75,6 @@ copy .env.example .env
 Edit `.env`:
 
 ```ini
-PROJECT_ID=your-firebase-project-id
-FIREBASE_CREDENTIALS=service-account.json
 ADMIN_PASSWORD=your-admin-password
 FLASK_SECRET_KEY=a-long-random-string
 TZ=Asia/Kolkata   # optional
@@ -115,7 +115,7 @@ cd frontend && npm run dev   # http://localhost:5173, proxies /api to Flask
 
 1. A student enters their hostel ID, picks a meal via tabs, chooses attending/absent, optionally ticks the food items they want (from that day's menu), and submits.
 2. The backend validates the ID (if the registry is enabled), checks for a duplicate record, and checks selected foods against the day's menu.
-3. Attendance is saved to Firestore, the counts update, and a confirmation animation appears.
+3. Attendance is saved to the in-memory store, the counts update, and a confirmation animation appears.
 4. The student summary polls `/api/summary` every 5 seconds via `useQuery`.
 5. Admins log in, pick a date, and see the live meal plan (aggregated food counts, present/absent lists) plus the 7-day chart and history. They can edit the food menu for any date.
 
@@ -145,7 +145,7 @@ Admin auth uses Flask sessions; the React SPA reads `GET /api/auth/status` and r
 ## ☁️ Deploying Later
 
 1. Build the frontend (`cd frontend && npm run build`); Flask serves `frontend/dist` automatically.
-2. Deploy the Flask app on a host like Render or Railway, setting every `.env` value as an environment variable (including `FIREBASE_CREDENTIALS` as a secret file).
+2. Deploy the Flask app on a host like Render or Railway, setting every `.env` value as an environment variable.
 3. Use a production WSGI server:
 
    ```bash
@@ -158,7 +158,7 @@ Admin auth uses Flask sessions; the React SPA reads `GET /api/auth/status` and r
 
 ## 🔐 Security Notes
 
-- The admin SDK bypasses Firestore security rules, so lock the rules down (the browser never reads Firestore directly).
-- Never commit `service-account.json`, `.env`, `frontend/node_modules`, or `frontend/dist` (all gitignored).
+- Records live in process memory only; restarting the app resets attendance data (data is not persisted to disk).
+- Never commit `.env`, `frontend/node_modules`, or `frontend/dist` (all gitignored).
 - Meal reminders are client-side only; they depend on the student's browser being open.
 - All admin API routes return 401 JSON when not authenticated; the SPA redirects to the login page.
